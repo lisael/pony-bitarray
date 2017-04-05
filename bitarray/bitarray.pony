@@ -3,11 +3,13 @@ bitarray.pony
 
 Bitarray is an abstraction over Array[U8] that mimic an Array[Bool] where each
 Bool value is a bit. It's three time slower at insertion (200M op/s vs
-600M op/s for Array[Bool]), but it's seven times smaller. Time vs space as
-usual.
+600M op/s for Array[Bool]), but it's seven times smaller (33M vs 240M for a
+100M elements array)
 
-The other use case is easily pushing a random number of bits into a buffer. Most
-compression algorithm need this at some point.
+Time vs space as usual.
+
+The other use case is to easily pusha random number of bits into a buffer. Many
+compression algoriths need this at some point.
 """
 
 use "collections"
@@ -33,6 +35,9 @@ class  Bitarray is Seq[Bool]
     _array = Array[U8](len)
 
   fun apply(index: USize): Bool ? =>
+    """
+    Fetch the element a position index.
+    """
     if (index + 1) > _size then error end
     (let octet_idx, let bit_idx) = index.divmod(8)
     let octet = _array(octet_idx)
@@ -41,7 +46,7 @@ class  Bitarray is Seq[Bool]
 
   fun ref push(value: Bool) =>
     """
-    Adds an element to the end of the sequence.
+    Adds an element to the end of the array.
     """
     (let octet_idx, let bit_idx) = _size.divmod(8)
     if bit_idx == 0 then
@@ -52,11 +57,14 @@ class  Bitarray is Seq[Bool]
 
   fun values(): BitarrayValues^ =>
     """
-    Returns an iterator over the elements of the sequence.
+    Returns an iterator over the elements.
     """
     BitarrayValues(this)
 
   fun ref update(i: USize val, value: Bool): Bool ? =>
+    """
+    Update the element at i and return the old value
+    """
     if (i + 1)> _size then error end
     (let octet_idx, let bit_idx) = i.divmod(8)
     let octet = _array(octet_idx)
@@ -70,20 +78,34 @@ class  Bitarray is Seq[Bool]
 
   fun size():USize =>
     """
-    Returns the number of elements in the sequence.
+    Returns the number of elements in the Bitarray.
     """
     _size
 
+  fun bytes_size():USize =>
+    """
+    Returns the number of bytes to represent the Bitarray
+    """
+    _array.size()
+
+  fun bytes(): ArrayValues[U8 val, this->Array[U8 val] ref] ref^ =>
+    _array.values()
+
   fun debug(): String =>
+    """
+    Nice string representation. Although grouped by octets, It's NOT a
+    representation of the underlying bytes, as it reads left to right.
+    """
     let result = recover trn String() end
+    result.push('[')
     var done: USize = 0
     for octet in _array.values() do
       for bit in Range(0, 8) do
+        if done >= _size then break end
         if (bit == 0) and (done != 0) then
           result.push(' ')
         end
         done = done + 1
-        if done > _size then break end
         result.push(
           if ( octet and (1 << bit.u8()) ) != 0 then
             '1'
@@ -93,6 +115,7 @@ class  Bitarray is Seq[Bool]
         )
       end
     end
+    result.push(']')
     consume val result
 
   fun ref reserve(len: USize) =>
@@ -116,12 +139,14 @@ class  Bitarray is Seq[Bool]
     """
     Removes an element from the end of the sequence.
     """
+    if _size == 0 then error end
+    let result = apply(_size - 1)
     _size = _size - 1
     let bit_idx = _size.mod(8)
-    if bit_idx == 7 then
+    if bit_idx == 0 then
       _array.pop()
     end
-    apply(_size)
+    result
 
   fun ref unshift(value: Bool) =>
     """
@@ -139,7 +164,7 @@ class  Bitarray is Seq[Bool]
     """
     Removes an element from the beginning of the sequence.
     """
-    if false then error else false end
+    if true then error else false end
 
   fun ref append(seq: (ReadSeq[Bool] & ReadElement[Bool^]), offset: USize = 0,
     len: USize = -1) =>
@@ -153,6 +178,23 @@ class  Bitarray is Seq[Bool]
     Add len iterated elements to the end of the list, starting from the given
     offset.
     """
+    var done: USize = 0
+    for v in iter do
+      if offset <= (done = done + 1) then
+        done = 0
+        if len > (done = done + 1) then
+          push(v)
+        end
+        break
+      end
+    end
+    for v in iter do
+      if len > (done = done + 1) then
+        push(v)
+      else
+        break
+      end
+    end
 
   fun ref truncate(len: USize) =>
     """
@@ -167,6 +209,3 @@ class  Bitarray is Seq[Bool]
       _array.truncate(octet_idx)
       _size = len
     end
-
-
-
