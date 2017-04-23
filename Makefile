@@ -23,7 +23,7 @@ debug: $(DEBUG) ## Build a and run the package with --debug
 test: $(TEST_BIN) runtest ## Build and run tests
 
 $(TEST_BIN): $(BUILD_DIR) $(PONY_SRC)
-	$(PONYC) -o $(BUILD_DIR) --path . $(TEST_SRC)
+	$(PONYC) -o $(BUILD_DIR) -d --path . $(TEST_SRC)
 
 runtest: ## Run the tests
 	$(TEST_BIN)

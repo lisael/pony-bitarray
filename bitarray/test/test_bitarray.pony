@@ -24,7 +24,6 @@ primitive _GetTestArray
     a.push(false)
     a
 
-
 actor Main is TestList
   new create(env: Env) =>
     PonyTest(env, this)
@@ -39,7 +38,58 @@ actor Main is TestList
     test(_TestClear)
     test(_TestPop)
     test(_TestUnshift)
+    test(_TestShift)
     test(_TestConcat)
+    test(_TestAppend)
+    test(_TestInit)
+    
+class iso _TestInit is UnitTest
+  fun name(): String => "Init"
+  fun apply(h: TestHelper) =>
+    var a = Bitarray.init(true, 17)
+    h.assert_eq[USize](a.size(), 17)
+    h.assert_eq[USize](a.bytes_size(), 3)
+    for b in a.bytes() do
+      h.assert_eq[U8](b, 255)
+    end
+    a = Bitarray.init(false, 16)
+    h.assert_eq[USize](a.size(), 16)
+    h.assert_eq[USize](a.bytes_size(), 2)
+    for b in a.bytes() do
+      h.assert_eq[U8](b, 0)
+    end
+
+class iso _TestShift is UnitTest
+  fun name(): String => "Shift"
+  fun apply(h: TestHelper) ? =>
+    var a = _GetTestArray()
+    h.assert_eq[U8](U8(2) >> 1, 1)
+    h.assert_eq[Bool](a.shift(), true)
+    h.assert_eq[String](a.debug(), "[01100111 000]")
+    h.assert_eq[USize](a.size(), 11)
+    h.assert_eq[USize](a.bytes_size(), 2)
+    a.shift()
+    a.shift()
+    h.assert_eq[USize](a.size(), 9)
+    h.assert_eq[USize](a.bytes_size(), 2)
+    a.shift()
+    h.assert_eq[USize](a.size(), 8)
+    h.assert_eq[USize](a.bytes_size(), 1)
+    h.assert_eq[String](a.debug(), "[00111000]")
+    a = Bitarray()
+    try a.shift(); h.fail("Should raise an error") end
+
+class iso _TestAppend is UnitTest
+  fun name():String => "Append"
+  fun apply(h: TestHelper) =>
+    let a = Bitarray()
+    h.assert_eq[String](a.debug(), "[]")
+    var ba : Array[Bool] = [true; false; false; true]
+    a.append(ba)
+    h.assert_eq[String](a.debug(), "[1001]")
+    a.clear()
+    a.append(ba, 1, 2)
+    h.assert_eq[String](a.debug(), "[00]")
 
 class iso _TestConcat is UnitTest
   fun name():String => "Concat"

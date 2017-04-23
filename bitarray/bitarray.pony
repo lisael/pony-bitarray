@@ -32,7 +32,24 @@ class  Bitarray is Seq[Bool]
   let _array: Array[U8]
   var _size: USize = 0
   new create(len: USize val = 0) =>
-    _array = Array[U8](len)
+    (var octet_idx, let bit_idx) = len.divmod(8)
+    if bit_idx != 0 then
+      octet_idx = octet_idx + 1
+    end
+
+    _array = Array[U8](octet_idx)
+
+  new init(from: Bool, len: USize) =>
+    let from' = if from then U8(255) else U8(0) end
+
+    (var octet_idx, let bit_idx) = len.divmod(8)
+    if bit_idx != 0 then
+      octet_idx = octet_idx + 1
+    end
+
+    _array = Array[U8].init(from', octet_idx)
+    _size = len
+
 
   fun apply(index: USize): Bool ? =>
     """
@@ -123,7 +140,7 @@ class  Bitarray is Seq[Bool]
     Reserve space for len elements.
     """
     (var octet_idx, let bit_idx) = len.divmod(8)
-    if bit_idx != 7 then
+    if bit_idx != 0 then
       octet_idx = octet_idx + 1
     end
     _array.reserve(octet_idx)
@@ -150,7 +167,7 @@ class  Bitarray is Seq[Bool]
 
   fun ref unshift(value: Bool) =>
     """
-    Adds an element to the beginning of the sequence.
+    Adds an element to the beginning of the array.
     """
     let new_byte = if value then U8(1) else U8(0) end
     _array.unshift(new_byte)
@@ -164,14 +181,49 @@ class  Bitarray is Seq[Bool]
     """
     Removes an element from the beginning of the sequence.
     """
-    if true then error else false end
+    if _size == 0 then error end
+    var result: U8 = 0
+
+    var remain = U8(0)
+    for i in Range(0, _array.size()) do
+      let octet = _array(i)
+      remain = if (U8(1) and octet) == 1 then 128 else 0 end
+      if i > 0 then
+        _array.update(i - 1, _array(i - 1) or remain)
+      else
+        result = U8(1) and octet
+      end
+      _array.update(i, octet >> 1)
+    end
+
+    _size = _size - 1
+
+    if _size.mod(8) == 0 then
+      _array.pop()
+    end
+
+    result == 1
 
   fun ref append(seq: (ReadSeq[Bool] & ReadElement[Bool^]), offset: USize = 0,
     len: USize = -1) =>
     """
-    Add len elements to the end of the list, starting from the given
+    Add len elements to the end of the array, starting from the given
     offset.
     """
+    if offset >= seq.size() then
+      return
+    end
+
+    let copy_len = len.min(seq.size() - offset)
+
+    var n = USize(0)
+
+    try
+      while n < copy_len do
+        push(seq(offset + n))
+        n = n + 1
+      end
+    end
 
   fun ref concat(iter: Iterator[Bool^], offset: USize = 0, len: USize = -1) =>
     """
@@ -179,6 +231,7 @@ class  Bitarray is Seq[Bool]
     offset.
     """
     var done: USize = 0
+
     for v in iter do
       if offset <= (done = done + 1) then
         done = 0
@@ -188,6 +241,7 @@ class  Bitarray is Seq[Bool]
         break
       end
     end
+
     for v in iter do
       if len > (done = done + 1) then
         push(v)
