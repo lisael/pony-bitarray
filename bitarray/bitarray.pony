@@ -26,7 +26,7 @@ class BitarrayValues is Iterator[Bool]
     _array.size() > _idx
 
   fun ref next(): Bool ? =>
-    _array(_idx = _idx + 1)
+    _array(_idx = _idx + 1)?
 
 class  Bitarray is Seq[Bool]
   let _array: Array[U8]
@@ -57,7 +57,7 @@ class  Bitarray is Seq[Bool]
     """
     if (index + 1) > _size then error end
     (let octet_idx, let bit_idx) = index.divrem_unsafe(8)
-    let octet = _array(octet_idx)
+    let octet = _array(octet_idx)?
     let mask = 1 << bit_idx.u8()
     (octet and mask) != 0
 
@@ -70,7 +70,7 @@ class  Bitarray is Seq[Bool]
       _array.push(0)
     end
     _size = _size + 1
-    try update(_size - 1, value) end
+    try update(_size - 1, value)? end
 
   fun values(): BitarrayValues^ =>
     """
@@ -84,12 +84,12 @@ class  Bitarray is Seq[Bool]
     """
     if (i + 1)> _size then error end
     (let octet_idx, let bit_idx) = i.divrem_unsafe(8)
-    let octet = _array(octet_idx)
+    let octet = _array(octet_idx)?
     var mask = U8(1) << bit_idx.u8()
     let new_byte = if value then (octet or mask) else (octet and (U8(255) xor mask)) end
     let result = (octet and mask) != 0
     if result != value then
-      _array.update(octet_idx, new_byte)
+      _array.update(octet_idx, new_byte)?
     end
     result
 
@@ -157,11 +157,11 @@ class  Bitarray is Seq[Bool]
     Removes an element from the end of the sequence.
     """
     if _size == 0 then error end
-    let result = apply(_size - 1)
+    let result = apply(_size - 1)?
     _size = _size - 1
     let bit_idx = _size.rem(8)
     if bit_idx == 0 then
-      _array.pop()
+      _array.pop()?
     end
     result
 
@@ -173,7 +173,7 @@ class  Bitarray is Seq[Bool]
     _array.unshift(new_byte)
     _size = _size + 8
     for b in Range(8, _size) do
-      try update(b-7, apply(b)) end
+      try update(b-7, apply(b)?)? end
     end
     _size = _size - 7
 
@@ -186,20 +186,20 @@ class  Bitarray is Seq[Bool]
 
     var remain = U8(0)
     for i in Range(0, _array.size()) do
-      let octet = _array(i)
+      let octet = _array(i)?
       remain = if (U8(1) and octet) == 1 then 128 else 0 end
       if i > 0 then
-        _array.update(i - 1, _array(i - 1) or remain)
+        _array.update(i - 1, _array(i - 1)? or remain)?
       else
         result = U8(1) and octet
       end
-      _array.update(i, octet >> 1)
+      _array.update(i, octet >> 1)?
     end
 
     _size = _size - 1
 
     if _size.rem(8) == 0 then
-      _array.pop()
+      _array.pop()?
     end
 
     result == 1
@@ -220,7 +220,7 @@ class  Bitarray is Seq[Bool]
 
     try
       while n < copy_len do
-        push(seq(offset + n))
+        push(seq(offset + n)?)
         n = n + 1
       end
     end
