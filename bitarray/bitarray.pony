@@ -26,13 +26,13 @@ class BitarrayValues is Iterator[Bool]
     _array.size() > _idx
 
   fun ref next(): Bool ? =>
-    _array(_idx = _idx + 1)
+    _array(_idx = _idx + 1)?
 
 class  Bitarray is Seq[Bool]
   let _array: Array[U8]
   var _size: USize = 0
   new create(len: USize val = 0) =>
-    (var octet_idx, let bit_idx) = len.divmod(8)
+    (var octet_idx, let bit_idx) = len.divrem_unsafe(8)
     if bit_idx != 0 then
       octet_idx = octet_idx + 1
     end
@@ -42,7 +42,7 @@ class  Bitarray is Seq[Bool]
   new init(from: Bool, len: USize) =>
     let from' = if from then U8(255) else U8(0) end
 
-    (var octet_idx, let bit_idx) = len.divmod(8)
+    (var octet_idx, let bit_idx) = len.divrem_unsafe(8)
     if bit_idx != 0 then
       octet_idx = octet_idx + 1
     end
@@ -56,8 +56,8 @@ class  Bitarray is Seq[Bool]
     Fetch the element a position index.
     """
     if (index + 1) > _size then error end
-    (let octet_idx, let bit_idx) = index.divmod(8)
-    let octet = _array(octet_idx)
+    (let octet_idx, let bit_idx) = index.divrem_unsafe(8)
+    let octet = _array(octet_idx)?
     let mask = 1 << bit_idx.u8()
     (octet and mask) != 0
 
@@ -65,12 +65,12 @@ class  Bitarray is Seq[Bool]
     """
     Adds an element to the end of the array.
     """
-    (let octet_idx, let bit_idx) = _size.divmod(8)
+    (let octet_idx, let bit_idx) = _size.divrem_unsafe(8)
     if bit_idx == 0 then
       _array.push(0)
     end
     _size = _size + 1
-    try update(_size - 1, value) end
+    try update(_size - 1, value)? end
 
   fun values(): BitarrayValues^ =>
     """
@@ -83,13 +83,13 @@ class  Bitarray is Seq[Bool]
     Update the element at i and return the old value
     """
     if (i + 1)> _size then error end
-    (let octet_idx, let bit_idx) = i.divmod(8)
-    let octet = _array(octet_idx)
+    (let octet_idx, let bit_idx) = i.divrem_unsafe(8)
+    let octet = _array(octet_idx)?
     var mask = U8(1) << bit_idx.u8()
     let new_byte = if value then (octet or mask) else (octet and (U8(255) xor mask)) end
     let result = (octet and mask) != 0
     if result != value then
-      _array.update(octet_idx, new_byte)
+      _array.update(octet_idx, new_byte)?
     end
     result
 
@@ -139,7 +139,7 @@ class  Bitarray is Seq[Bool]
     """
     Reserve space for len elements.
     """
-    (var octet_idx, let bit_idx) = len.divmod(8)
+    (var octet_idx, let bit_idx) = len.divrem_unsafe(8)
     if bit_idx != 0 then
       octet_idx = octet_idx + 1
     end
@@ -157,11 +157,11 @@ class  Bitarray is Seq[Bool]
     Removes an element from the end of the sequence.
     """
     if _size == 0 then error end
-    let result = apply(_size - 1)
+    let result = apply(_size - 1)?
     _size = _size - 1
-    let bit_idx = _size.mod(8)
+    let bit_idx = _size.rem(8)
     if bit_idx == 0 then
-      _array.pop()
+      _array.pop()?
     end
     result
 
@@ -173,7 +173,7 @@ class  Bitarray is Seq[Bool]
     _array.unshift(new_byte)
     _size = _size + 8
     for b in Range(8, _size) do
-      try update(b-7, apply(b)) end
+      try update(b-7, apply(b)?)? end
     end
     _size = _size - 7
 
@@ -186,20 +186,20 @@ class  Bitarray is Seq[Bool]
 
     var remain = U8(0)
     for i in Range(0, _array.size()) do
-      let octet = _array(i)
+      let octet = _array(i)?
       remain = if (U8(1) and octet) == 1 then 128 else 0 end
       if i > 0 then
-        _array.update(i - 1, _array(i - 1) or remain)
+        _array.update(i - 1, _array(i - 1)? or remain)?
       else
         result = U8(1) and octet
       end
-      _array.update(i, octet >> 1)
+      _array.update(i, octet >> 1)?
     end
 
     _size = _size - 1
 
-    if _size.mod(8) == 0 then
-      _array.pop()
+    if _size.rem(8) == 0 then
+      _array.pop()?
     end
 
     result == 1
@@ -220,7 +220,7 @@ class  Bitarray is Seq[Bool]
 
     try
       while n < copy_len do
-        push(seq(offset + n))
+        push(seq(offset + n)?)
         n = n + 1
       end
     end
@@ -256,7 +256,7 @@ class  Bitarray is Seq[Bool]
     If the sequence is already smaller than len, do nothing.
     """
     if len < _size then
-      (var octet_idx, let bit_idx) = len.divmod(8)
+      (var octet_idx, let bit_idx) = len.divrem_unsafe(8)
       if bit_idx != 7 then
         octet_idx = octet_idx + 1
       end

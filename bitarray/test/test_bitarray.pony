@@ -5,7 +5,7 @@ Test bitarray stuff.
 """
 
 use "ponytest"
-use "bitarray"
+use "../../bitarray"
 
 primitive _GetTestArray
   fun apply(): Bitarray ref^ =>
@@ -64,20 +64,20 @@ class iso _TestShift is UnitTest
   fun apply(h: TestHelper) ? =>
     var a = _GetTestArray()
     h.assert_eq[U8](U8(2) >> 1, 1)
-    h.assert_eq[Bool](a.shift(), true)
+    h.assert_eq[Bool](a.shift()?, true)
     h.assert_eq[String](a.debug(), "[01100111 000]")
     h.assert_eq[USize](a.size(), 11)
     h.assert_eq[USize](a.bytes_size(), 2)
-    a.shift()
-    a.shift()
+    a.shift()?
+    a.shift()?
     h.assert_eq[USize](a.size(), 9)
     h.assert_eq[USize](a.bytes_size(), 2)
-    a.shift()
+    a.shift()?
     h.assert_eq[USize](a.size(), 8)
     h.assert_eq[USize](a.bytes_size(), 1)
     h.assert_eq[String](a.debug(), "[00111000]")
     a = Bitarray()
-    try a.shift(); h.fail("Should raise an error") end
+    try a.shift()?; h.fail("Should raise an error") end
 
 class iso _TestAppend is UnitTest
   fun name():String => "Append"
@@ -143,18 +143,18 @@ class iso _TestPop is UnitTest
   fun name(): String => "Pop"
   fun apply(h: TestHelper) ? =>
     var a = _GetTestArray()
-    h.assert_eq[Bool](a.pop(), false)
+    h.assert_eq[Bool](a.pop()?, false)
     h.assert_eq[String](a.debug(), "[10110011 100]")
     h.assert_eq[USize](a.size(), 11)
     h.assert_eq[USize](a.bytes_size(), 2)
-    a.pop()
-    a.pop()
-    a.pop()
+    a.pop()?
+    a.pop()?
+    a.pop()?
     h.assert_eq[USize](a.size(), 8)
     h.assert_eq[USize](a.bytes_size(), 1)
     h.assert_eq[String](a.debug(), "[10110011]")
     a = Bitarray()
-    try a.pop(); h.fail("Should raise an error") end
+    try a.pop()?; h.fail("Should raise an error") end
 
 
 class iso _TestClear is UnitTest
@@ -170,12 +170,12 @@ class iso _TestUpdate is UnitTest
   fun name(): String => "Update"
   fun apply(h: TestHelper) ? =>
     let a = _GetTestArray()
-    h.assert_eq[Bool](a.update(0, false), true)
-    h.assert_eq[Bool](a.update(1, false), false)
-    h.assert_eq[Bool](a.update(2, true), true)
-    h.assert_eq[Bool](a(3), true)
-    h.assert_eq[Bool](a.update(4, true), false)
-    h.assert_eq[Bool](a(5), false)
+    h.assert_eq[Bool](a.update(0, false)?, true)
+    h.assert_eq[Bool](a.update(1, false)?, false)
+    h.assert_eq[Bool](a.update(2, true)?, true)
+    h.assert_eq[Bool](a(3)?, true)
+    h.assert_eq[Bool](a.update(4, true)?, false)
+    h.assert_eq[Bool](a(5)?, false)
     h.assert_eq[String](a.debug(), "[00111011 1000]")
 
 class iso _TestApply is UnitTest
@@ -184,11 +184,11 @@ class iso _TestApply is UnitTest
     let a = _GetTestArray()
     h.assert_eq[USize](a.size(), 12)
     h.assert_eq[String](a.debug(), "[10110011 1000]")
-    h.assert_eq[Bool](a(0), true)
-    h.assert_eq[Bool](a(1), false)
-    h.assert_eq[Bool](a(2), true)
-    h.assert_eq[Bool](a(3), true)
-    h.assert_eq[Bool](a(4), false)
-    h.assert_eq[Bool](a(5), false)
-    h.assert_eq[Bool](a(11), false)
-    try a(12); h.fail("Should raise an error") end
+    h.assert_eq[Bool](a(0)?, true)
+    h.assert_eq[Bool](a(1)?, false)
+    h.assert_eq[Bool](a(2)?, true)
+    h.assert_eq[Bool](a(3)?, true)
+    h.assert_eq[Bool](a(4)?, false)
+    h.assert_eq[Bool](a(5)?, false)
+    h.assert_eq[Bool](a(11)?, false)
+    try a(12)?; h.fail("Should raise an error") end
